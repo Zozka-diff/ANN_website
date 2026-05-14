@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AlexNet — مشروع الشبكات العصبية</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&family=IBM+Plex+Sans:wght@300;400;500&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #060810;
+  --surface: #0d0f1a;
+  --card: #131525;
+  --border: #1e2240;
+  --border-hover: #3040a0;
+  --accent: #4f7fff;
+  --accent2: #ff5f6d;
+  --accent3: #00e5a0;
+  --accent4: #ffd166;
+  --text: #dde2f5;
+  --muted: #606890;
+  --mono: 'Space Mono', monospace;
+  --sans-en: 'IBM Plex Sans', sans-serif;
+  --display-en: 'Syne', sans-serif;
+  --sans-ar: 'Cairo', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans-en);
+  font-size: 16px;
+  line-height: 1.75;
+  overflow-x: hidden;
+}
+
+html[lang="ar"] body { font-family: var(--sans-ar); direction: rtl; }
+html[lang="ar"] .en-text { display: none; }
+html[lang="en"] .ar-text { display: none; }
+
+body::after {
+  content:''; position:fixed; inset:0;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:9000; opacity:0.4;
+}
+
+#prog { position:fixed; top:0; left:0; height:2px; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent3)); z-index:9999; transition:width .1s; }
+
+/* NAV */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:500;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:1rem 2.5rem;
+  background:rgba(6,8,16,.9); backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo { font-family:var(--mono); font-size:1rem; color:var(--accent); text-decoration:none; letter-spacing:.1em; }
+.nav-right { display:flex; align-items:center; gap:1.5rem; }
+.nav-links { display:flex; gap:1.5rem; list-style:none; }
+.nav-links a { color:var(--muted); text-decoration:none; font-size:.78rem; letter-spacing:.06em; text-transform:uppercase; font-family:var(--mono); transition:color .2s; }
+html[lang="ar"] .nav-links a { font-family:var(--sans-ar); letter-spacing:0; text-transform:none; font-size:.85rem; }
+.nav-links a:hover { color:var(--accent); }
+
+.lang-toggle { display:flex; border:1px solid var(--border); border-radius:5px; overflow:hidden; }
+.lang-btn { padding:.35rem .75rem; font-family:var(--mono); font-size:.72rem; cursor:pointer; background:transparent; color:var(--muted); border:none; transition:all .2s; }
+.lang-btn.active { background:var(--accent); color:#fff; }
+
+/* HERO */
+.hero {
+  min-height:100vh; display:flex; flex-direction:column; justify-content:center;
+  padding:9rem 3rem 5rem; position:relative; overflow:hidden;
+}
+.hero-grid {
+  position:absolute; inset:0;
+  background-image:linear-gradient(rgba(79,127,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(79,127,255,.05) 1px,transparent 1px);
+  background-size:70px 70px;
+  mask-image:radial-gradient(ellipse 90% 90% at 50% 40%,black 10%,transparent 100%);
+}
+.orb { position:absolute; border-radius:50%; }
+.orb1 { width:800px;height:800px; background:radial-gradient(circle,rgba(79,127,255,.13) 0%,transparent 65%); top:-300px;left:-300px; animation:breathe 7s ease-in-out infinite; }
+.orb2 { width:600px;height:600px; background:radial-gradient(circle,rgba(0,229,160,.07) 0%,transparent 65%); bottom:-200px;right:-100px; animation:breathe 9s ease-in-out infinite reverse; }
+@keyframes breathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+
+.hero-eyebrow { font-family:var(--mono); font-size:.75rem; color:var(--accent3); letter-spacing:.2em; text-transform:uppercase; margin-bottom:1.2rem; opacity:0; animation:riseUp .9s ease forwards .2s; }
+html[lang="ar"] .hero-eyebrow { font-family:var(--sans-ar); letter-spacing:0; }
+
+.hero h1 { font-family:var(--display-en); font-size:clamp(5rem,14vw,11rem); font-weight:800; line-height:.88; letter-spacing:-.04em; margin-bottom:1.5rem; opacity:0; animation:riseUp .9s ease forwards .4s; }
+html[lang="ar"] .hero h1 { font-family:var(--sans-ar); letter-spacing:0; line-height:1; }
+.blue{color:var(--accent)} .coral{color:var(--accent2)}
+
+.hero-sub { font-size:1.1rem; color:var(--muted); max-width:560px; margin-bottom:2rem; font-weight:300; opacity:0; animation:riseUp .9s ease forwards .6s; }
+html[lang="ar"] .hero-sub { font-family:var(--sans-ar); }
+
+.badges { display:flex; flex-wrap:wrap; gap:.6rem; margin-bottom:2rem; opacity:0; animation:riseUp .9s ease forwards .75s; }
+.badge { font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; padding:.28rem .75rem; border-radius:3px; border:1px solid; }
+html[lang="ar"] .badge { font-family:var(--sans-ar); letter-spacing:0; }
+.b-blue  { border-color:rgba(79,127,255,.4);  color:var(--accent);  background:rgba(79,127,255,.07); }
+.b-green { border-color:rgba(0,229,160,.4);   color:var(--accent3); background:rgba(0,229,160,.07); }
+.b-red   { border-color:rgba(255,95,109,.4);  color:var(--accent2); background:rgba(255,95,109,.07); }
+.b-gold  { border-color:rgba(255,209,102,.4); color:var(--accent4); background:rgba(255,209,102,.07); }
+
+.hero-cta { display:flex; gap:1rem; flex-wrap:wrap; opacity:0; animation:riseUp .9s ease forwards .9s; }
+@keyframes riseUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+
+.btn { display:inline-flex; align-items:center; gap:.5rem; padding:.8rem 1.8rem; border-radius:4px; font-family:var(--mono); font-size:.8rem; letter-spacing:.06em; text-transform:uppercase; text-decoration:none; cursor:pointer; border:none; transition:all .22s; }
+html[lang="ar"] .btn { font-family:var(--sans-ar); letter-spacing:0; text-transform:none; }
+.btn-solid { background:var(--accent); color:#fff; }
+.btn-solid:hover { background:#7aa8ff; transform:translateY(-2px); box-shadow:0 10px 35px rgba(79,127,255,.35); }
+.btn-ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
+.btn-ghost:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-2px); }
+
+/* SECTIONS */
+section { padding:6rem 3rem; }
+.on-surface { background:var(--surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+
+.sec-label { font-family:var(--mono); font-size:.72rem; color:var(--accent); letter-spacing:.2em; text-transform:uppercase; margin-bottom:.6rem; }
+html[lang="ar"] .sec-label { font-family:var(--sans-ar); letter-spacing:0; text-transform:none; }
+.sec-title { font-family:var(--display-en); font-size:clamp(1.8rem,4vw,2.8rem); font-weight:800; line-height:1.05; margin-bottom:.8rem; }
+html[lang="ar"] .sec-title { font-family:var(--sans-ar); }
+.sec-desc { color:var(--muted); max-width:600px; font-weight:300; margin-bottom:2.5rem; font-size:.95rem; }
+html[lang="ar"] .sec-desc { font-family:var(--sans-ar); }
+
+.reveal { opacity:0; transform:translateY(24px); transition:opacity .7s ease,transform .7s ease; }
+.reveal.vis { opacity:1; transform:translateY(0); }
+
+/* ARCHITECTURE */
+.arch-scroll { overflow-x:auto; padding-bottom:1rem; }
+.arch-row { display:flex; align-items:center; gap:6px; min-width:980px; }
+html[lang="ar"] .arch-row { flex-direction:row-reverse; }
+.arch-arrow { color:var(--muted); font-size:1.1rem; flex-shrink:0; }
+html[lang="ar"] .arch-arrow { transform:scaleX(-1); }
+
+.layer { flex-shrink:0; border:1px solid var(--border); border-radius:10px; padding:1rem .9rem; text-align:center; position:relative; cursor:default; transition:all .25s; background:var(--card); }
+.layer:hover { border-color:var(--accent); transform:translateY(-6px); box-shadow:0 16px 50px rgba(79,127,255,.18); z-index:5; }
+.layer:hover .tip { opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+.ltype { font-family:var(--mono); font-size:.62rem; color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:.35rem; }
+.lname { font-family:var(--display-en); font-size:.9rem; font-weight:700; margin-bottom:.2rem; }
+.ldim  { font-size:.68rem; color:var(--muted); font-family:var(--mono); }
+.lbars { display:flex; gap:3px; justify-content:center; margin-top:.6rem; }
+.bar { width:5px; border-radius:3px; background:var(--accent); opacity:.55; }
+.tip { position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%) translateY(8px); width:210px; background:#1a1d35; border:1px solid var(--border-hover); border-radius:8px; padding:.9rem 1rem; font-size:.76rem; line-height:1.5; color:var(--text); opacity:0; transition:all .2s; pointer-events:none; z-index:10; text-align:left; }
+html[lang="ar"] .tip { text-align:right; font-family:var(--sans-ar); }
+.tip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:6px solid transparent; border-top-color:var(--border-hover); }
+
+/* INNOVATIONS */
+.innov-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(275px,1fr)); gap:1.2rem; margin-top:2.5rem; }
+.innov-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:1.6rem; transition:all .25s; position:relative; overflow:hidden; }
+.innov-card::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; background:var(--c,var(--accent)); }
+.innov-card:hover { border-color:var(--c,var(--accent)); transform:translateY(-4px); box-shadow:0 16px 50px rgba(0,0,0,.4); }
+.itag { display:inline-block; font-family:var(--mono); font-size:.63rem; letter-spacing:.1em; padding:.2rem .6rem; border-radius:3px; background:rgba(79,127,255,.1); color:var(--accent); margin-bottom:.8rem; }
+html[lang="ar"] .itag { font-family:var(--sans-ar); letter-spacing:0; }
+.innov-card h4 { font-family:var(--display-en); font-size:1.05rem; font-weight:700; margin-bottom:.5rem; }
+html[lang="ar"] .innov-card h4 { font-family:var(--sans-ar); }
+.innov-card p { color:var(--muted); font-size:.87rem; font-weight:300; }
+html[lang="ar"] .innov-card p { font-family:var(--sans-ar); }
+
+/* DELIVERABLES */
+.deliv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1.2rem; margin-top:2.5rem; }
+.deliv-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:1.8rem; position:relative; overflow:hidden; transition:all .25s; }
+.deliv-card::after { content:''; position:absolute; bottom:0;left:0;right:0; height:2px; background:var(--dc,var(--accent)); transform:scaleX(0); transition:transform .3s; transform-origin:left; }
+.deliv-card:hover::after { transform:scaleX(1); }
+.deliv-card:hover { border-color:var(--dc,var(--accent)); transform:translateY(-5px); box-shadow:0 20px 60px rgba(0,0,0,.4); }
+.dnum { font-family:var(--mono); font-size:.7rem; color:var(--muted); margin-bottom:1rem; }
+.dicon { font-size:2.2rem; display:block; margin-bottom:.8rem; }
+.deliv-card h3 { font-family:var(--display-en); font-size:1.2rem; font-weight:700; margin-bottom:.5rem; }
+html[lang="ar"] .deliv-card h3 { font-family:var(--sans-ar); }
+.deliv-card p { color:var(--muted); font-size:.87rem; font-weight:300; }
+html[lang="ar"] .deliv-card p { font-family:var(--sans-ar); }
+.status { display:inline-flex; align-items:center; gap:.4rem; margin-top:1.2rem; padding:.3rem .75rem; border-radius:20px; font-family:var(--mono); font-size:.67rem; letter-spacing:.07em; }
+html[lang="ar"] .status { font-family:var(--sans-ar); letter-spacing:0; }
+.st-todo { background:rgba(255,255,255,.04); color:var(--muted); }
+.st-wip  { background:rgba(255,209,102,.08); color:var(--accent4); }
+.st-done { background:rgba(0,229,160,.08); color:var(--accent3); }
+.sdot { width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0; }
+
+/* PLACEHOLDER */
+.placeholder { border:2px dashed var(--border); border-radius:12px; padding:5rem 2rem; text-align:center; margin-top:2rem; transition:border-color .25s; }
+.placeholder:hover { border-color:var(--accent); }
+.ph-icon { font-size:3.5rem; display:block; margin-bottom:1rem; }
+.placeholder h4 { font-family:var(--display-en); font-size:1.3rem; font-weight:700; margin-bottom:.4rem; }
+html[lang="ar"] .placeholder h4 { font-family:var(--sans-ar); }
+.placeholder p { color:var(--muted); font-size:.88rem; max-width:430px; margin:0 auto 1.5rem; }
+html[lang="ar"] .placeholder p { font-family:var(--sans-ar); }
+
+/* MCQ */
+.mcq-wrap { max-width:780px; margin-top:2.5rem; }
+.mcq-card { background:var(--card); border:1px solid var(--border); border-radius:10px; margin-bottom:1rem; overflow:hidden; transition:border-color .2s; }
+.mcq-card:hover { border-color:var(--border-hover); }
+.mcq-card.open { border-color:var(--accent); }
+.mcq-head { padding:1.1rem 1.4rem; display:flex; align-items:center; gap:1rem; cursor:pointer; user-select:none; }
+.mcq-num { font-family:var(--mono); color:var(--accent); font-size:.75rem; flex-shrink:0; }
+.mcq-q { flex:1; font-size:.93rem; font-weight:500; }
+html[lang="ar"] .mcq-q { font-family:var(--sans-ar); }
+.mcq-chev { color:var(--muted); font-size:.75rem; flex-shrink:0; transition:transform .3s; }
+.mcq-card.open .mcq-chev { transform:rotate(180deg); }
+.mcq-body { display:none; padding:.5rem 1.4rem 1.4rem; background:var(--surface); }
+.mcq-card.open .mcq-body { display:block; }
+.opt { display:flex; align-items:flex-start; gap:.7rem; padding:.55rem .8rem; border-radius:6px; border:1px solid transparent; margin-bottom:.4rem; cursor:pointer; font-size:.88rem; transition:all .15s; }
+html[lang="ar"] .opt { flex-direction:row-reverse; }
+.opt:hover { background:rgba(79,127,255,.06); border-color:var(--border); }
+.opt.correct { background:rgba(0,229,160,.1); border-color:rgba(0,229,160,.35); color:var(--accent3); }
+.opt.wrong   { background:rgba(255,95,109,.1); border-color:rgba(255,95,109,.35); color:var(--accent2); }
+.opt-l { font-family:var(--mono); font-size:.72rem; color:var(--accent); flex-shrink:0; margin-top:.1rem; }
+html[lang="ar"] .opt-text { font-family:var(--sans-ar); }
+.explain { margin-top:.8rem; padding:.7rem 1rem; border-radius:6px; background:rgba(0,229,160,.07); border:1px solid rgba(0,229,160,.2); color:var(--accent3); font-size:.83rem; display:none; }
+html[lang="ar"] .explain { font-family:var(--sans-ar); text-align:right; }
+.mcq-more { margin-top:1.2rem; padding:1.2rem; border:1px dashed var(--border); border-radius:8px; text-align:center; font-family:var(--mono); font-size:.78rem; color:var(--muted); }
+html[lang="ar"] .mcq-more { font-family:var(--sans-ar); }
+
+/* REPORT */
+.steps-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1.2rem; margin-top:2.5rem; }
+.step-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:1.5rem; transition:all .25s; }
+.step-card:hover { border-color:var(--accent2); transform:translateY(-4px); }
+.step-n { font-family:var(--mono); font-size:1.8rem; font-weight:700; color:var(--border); margin-bottom:.7rem; }
+.step-card h4 { font-family:var(--display-en); font-weight:700; margin-bottom:.4rem; }
+html[lang="ar"] .step-card h4 { font-family:var(--sans-ar); }
+.step-card p { color:var(--muted); font-size:.84rem; font-weight:300; }
+html[lang="ar"] .step-card p { font-family:var(--sans-ar); }
+
+/* TEAM */
+.team-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:1rem; margin-top:2rem; }
+.team-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:1.5rem; text-align:center; transition:all .25s; }
+.team-card:hover { border-color:var(--accent); transform:translateY(-4px); }
+.avatar { width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display-en);font-weight:800;font-size:1.2rem;color:#fff;margin:0 auto .8rem; background:linear-gradient(135deg,var(--accent),var(--accent3)); }
+.team-card h4 { font-family:var(--display-en); font-weight:700; font-size:.95rem; }
+html[lang="ar"] .team-card h4 { font-family:var(--sans-ar); }
+.team-card p { color:var(--muted); font-size:.78rem; margin-top:.3rem; }
+html[lang="ar"] .team-card p { font-family:var(--sans-ar); }
+
+/* FOOTER */
+footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; }
+.foot-logo { font-family:var(--mono); color:var(--accent); font-size:.95rem; }
+.foot-copy { font-family:var(--mono); color:var(--muted); font-size:.75rem; }
+html[lang="ar"] .foot-copy { font-family:var(--sans-ar); }
+
+@media(max-width:768px){
+  nav{padding:1rem 1.2rem}
+  .nav-links{display:none}
+  section{padding:4rem 1.4rem}
+  .hero{padding:7rem 1.4rem 4rem}
+  footer{padding:2rem 1.4rem}
+}
+</style>
+</head>
+<body>
+
+<div id="prog"></div>
+
+<nav>
+  <a href="#" class="nav-logo">AlexNet //</a>
+  <div class="nav-right">
+    <ul class="nav-links">
+      <li><a href="#arch"><span class="en-text">Architecture</span><span class="ar-text">المعمارية</span></a></li>
+      <li><a href="#innov"><span class="en-text">Innovations</span><span class="ar-text">الابتكارات</span></a></li>
+      <li><a href="#slides"><span class="en-text">Slides</span><span class="ar-text">العرض</span></a></li>
+      <li><a href="#demo"><span class="en-text">Demo</span><span class="ar-text">التجريبي</span></a></li>
+      <li><a href="#mcq"><span class="en-text">MCQs</span><span class="ar-text">الأسئلة</span></a></li>
+      <li><a href="#report"><span class="en-text">Report</span><span class="ar-text">التقرير</span></a></li>
+      <li><a href="#team"><span class="en-text">Team</span><span class="ar-text">الفريق</span></a></li>
+    </ul>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('ar')">ع</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="hero-grid"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+
+  <div class="hero-eyebrow">
+    <span class="en-text">ANN Course Project · 2025/2026</span>
+    <span class="ar-text">مشروع مقرر الشبكات العصبية الاصطناعية · 2025/2026</span>
+  </div>
+
+  <h1><span class="blue">Alex</span><span class="coral">Net</span></h1>
+
+  <p class="hero-sub">
+    <span class="en-text">The deep convolutional neural network that revolutionized computer vision in 2012 — and changed AI forever.</span>
+    <span class="ar-text">الشبكة العصبية التلافيفية العميقة التي أحدثت ثورة في رؤية الحاسوب عام 2012 وغيّرت مسار الذكاء الاصطناعي إلى الأبد.</span>
+  </p>
+
+  <div class="badges">
+    <span class="badge b-blue"><span class="en-text">ILSVRC 2012 Winner</span><span class="ar-text">فائز ILSVRC 2012</span></span>
+    <span class="badge b-green"><span class="en-text">15.3% Top-5 Error</span><span class="ar-text">خطأ Top-5 بنسبة 15.3%</span></span>
+    <span class="badge b-red"><span class="en-text">8 Layers · 60M Params</span><span class="ar-text">8 طبقات · 60 مليون معامل</span></span>
+    <span class="badge b-gold"><span class="en-text">GPU-Accelerated Training</span><span class="ar-text">تدريب بتسريع GPU</span></span>
+  </div>
+
+  <div class="hero-cta">
+    <a href="#arch" class="btn btn-solid">
+      <span class="en-text">Explore Architecture →</span>
+      <span class="ar-text">← استكشف المعمارية</span>
+    </a>
+    <a href="#mcq" class="btn btn-ghost">
+      <span class="en-text">Take the Quiz</span>
+      <span class="ar-text">اختبر نفسك</span>
+    </a>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="on-surface" id="arch">
+  <div class="sec-label"><span class="en-text">01 · Architecture</span><span class="ar-text">01 · المعمارية</span></div>
+  <h2 class="sec-title reveal"><span class="en-text">How AlexNet Works</span><span class="ar-text">كيف تعمل AlexNet</span></h2>
+  <p class="sec-desc reveal">
+    <span class="en-text">8 learnable layers: 5 convolutional + 3 fully-connected. Hover each block for details.</span>
+    <span class="ar-text">8 طبقات قابلة للتعلم: 5 تلافيفية + 3 متصلة بالكامل. مرّر الفأرة فوق كل كتلة للتفاصيل.</span>
+  </p>
+
+  <div class="arch-scroll reveal">
+    <div class="arch-row">
+
+      <div class="layer">
+        <div class="ltype"><span class="en-text">Input</span><span class="ar-text">مدخل</span></div>
+        <div class="lname">227×227</div>
+        <div class="ldim">×3 RGB</div>
+        <div class="lbars">
+          <div class="bar" style="height:50px;background:var(--accent3)"></div>
+          <div class="bar" style="height:42px;background:var(--accent3)"></div>
+          <div class="bar" style="height:48px;background:var(--accent3)"></div>
+        </div>
+        <div class="tip">
+          <span class="en-text">Raw color image resized to 227×227 pixels, with 3 RGB channels.</span>
+          <span class="ar-text">صورة لونية خام بحجم 227×227 بكسل مع 3 قنوات RGB.</span>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+
+      <div class="layer">
+        <div class="ltype">Conv 1</div>
+        <div class="lname">55×55</div>
+        <div class="ldim">96f · 11×11 s4</div>
+        <div class="lbars">
+          <div class="bar" style="height:55px"></div><div class="bar" style="height:46px"></div>
+          <div class="bar" style="height:60px"></div><div class="bar" style="height:50px"></div>
+        </div>
+        <div class="tip">
+          <span class="en-text">96 filters of 11×11 stride 4. Detects edges, colors, basic textures. Followed by ReLU + MaxPool.</span>
+          <span class="ar-text">96 فلتر 11×11 خطوة 4. يكتشف الحواف والألوان. يتبعه ReLU + MaxPool.</span>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+
+      <div class="layer">
+        <div class="ltype">Conv 2</div>
+        <div class="lname">27×27</div>
+        <div class="ldim">256f · 5×5</div>
+        <div class="lbars">
+          <div class="bar" style="height:58px"></div><div class="bar" style="height:44px"></div>
+          <div class="bar" style="height:62px"></div><div class="bar" style="height:50px"></div>
+          <div class="bar" style="height:55px"></div>
+        </div>
+        <div class="tip">
+          <span class="en-text">256 filters of 5×5. Split across 2 GPUs. Detects complex patterns. ReLU + MaxPool.</span>
+          <span class="ar-text">256 فلتر 5×5. مقسّم على GPU اثنين. يكتشف أنماطًا معقدة. ReLU + MaxPool.</span>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+
+      <div class="layer">
+        <div class="ltype">Conv 3</div>
+        <div class="lname">13×13</div>
+        <div class="ldim">384f · 3×3</div>
+        <div class="lbars">
+          <div class="bar" style="height:52px"></div><div class="bar" style="height:60px"></div>
+          <div class="bar" style="height:46px"></div><div class="bar" style="height:56px"></div>
+        </div>
+        <div class="tip">
+          <span class="en-text">384 filters 3×3. GPUs communicate here (cross-GPU). No pooling after this layer.</span>
+          <span class="ar-text">384 فلتر 3×3. يتواصل المعالجان هنا. لا تجميع بعد هذه الطبقة.</span>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+
+      <div class="layer">
+        <div class="ltype">Conv 4</div>
+        <div class="lname">13×13</div>
+        <div class="ldim">384f · 3×3</div>
+        <div class="lbars">
+          <div class="bar" style="height:50px"></div><div class="bar" style="height:58px"></div>
+          <div class="bar" style="height:63px"></div><div class="bar" style="height:46px"></div>
+        </div>
+        <div class="tip">
+          <span class="en-text">384 filters 3×3, split back onto 2 GPUs independently. High-level features.</span>
+          <span class="ar-text">384 فلتر 3×3 مُعاد توزيعها على المعالجَين. ميزات عالية المستوى.</span>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+
+      <div class="layer">
+        <div class="ltype">Conv 5</div>
+        <div class="lname">13×13</div>
+        <div class="ldim">256f · 3×3</div>
+        <div class="lbars">
+          <div class="bar" style="height:54px"></div><div class="bar" style="height:48px"></div>
+          <div class="bar" style="height:62px"></div><div class="bar" style="height:50px"></div>
+        </div>
+        <div class="tip">
+          <span class="en-text">Final conv layer. Followed by MaxPool → 6×6×256 feature map fed into FC layers.</span>
+          <span class="ar-text">آخر طبقة تلافيفية. يتبعها MaxPool → خريطة 6×6×256 تُغذّي طبقات FC.</span>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+
+      <div class="layer">
+        <div class="ltype" style="color:var(--accent2)">FC 6</div>
+        <div class="lname">4096</div>
+        <div class="ldim"><span class="en-text">Fully Connected</span><span class="ar-text">متصل بالكامل</span></div>
+        <div class="lbars">
+          <div class="bar" style="height:65px;background:var(--accent2)"></div>
+          <div class="bar" style="height:55px;background:var(--accent2)"></div>
+          <div class="bar" style="height:60px;background:var(--accent2)"></div>
+        </div>
+        <div class="tip">
+          <span class="en-text">4096 neurons. Dropout p=0.5 applied during training to prevent overfitting.</span>
+          <span class="ar-text">4096 خلية. يُطبَّق Dropout p=0.5 أثناء التدريب لمنع الإفراط في التخصيص.</span>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+
+      <div class="layer">
+        <div class="ltype" style="color:var(--accent2)">FC 7</div>
+        <div class="lname">4096</div>
+        <div class="ldim"><span class="en-text">Fully Connected</span><span class="ar-text">متصل بالكامل</span></div>
+        <div class="lbars">
+          <div class="bar" style="height:65px;background:var(--accent2)"></div>
+          <div class="bar" style="height:52px;background:var(--accent2)"></div>
+          <div class="bar" style="height:60px;background:var(--accent2)"></div>
+        </div>
+        <div class="tip">
+          <span class="en-text">Another 4096-neuron FC layer with Dropout. Combines high-level features.</span>
+          <span class="ar-text">طبقة FC ثانية بـ 4096 خلية مع Dropout. تدمج الميزات عالية المستوى.</span>
+        </div>
+      </div>
+      <div class="arch-arrow">→</div>
+
+      <div class="layer">
+        <div class="ltype" style="color:var(--accent3)">FC 8</div>
+        <div class="lname">1000</div>
+        <div class="ldim">Softmax</div>
+        <div class="lbars">
+          <div class="bar" style="height:50px;background:var(--accent3)"></div>
+          <div class="bar" style="height:40px;background:var(--accent3)"></div>
+          <div class="bar" style="height:65px;background:var(--accent3)"></div>
+        </div>
+        <div class="tip">
+          <span class="en-text">1000 neurons = 1000 ImageNet classes. Softmax converts scores to probabilities.</span>
+          <span class="ar-text">1000 خلية = 1000 فئة في ImageNet. تحوّل Softmax النتائج إلى احتمالات.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <p style="margin-top:1rem;font-size:.73rem;color:var(--muted);font-family:var(--mono);" class="reveal">
+    <span class="en-text">← Scroll horizontally · Hover each block for details</span>
+    <span class="ar-text">مرّر أفقيًا · مرّر الفأرة فوق كل كتلة للتفاصيل →</span>
+  </p>
+</section>
+
+<!-- INNOVATIONS -->
+<section id="innov">
+  <div class="sec-label"><span class="en-text">02 · Key Innovations</span><span class="ar-text">02 · الابتكارات الرئيسية</span></div>
+  <h2 class="sec-title reveal"><span class="en-text">What Made AlexNet a Breakthrough</span><span class="ar-text">ما الذي جعل AlexNet نقطة تحوّل</span></h2>
+  <p class="sec-desc reveal">
+    <span class="en-text">Six innovations that crushed the 2012 competition by over 10 percentage points.</span>
+    <span class="ar-text">ستة ابتكارات تفوّقت بأكثر من 10 نقاط مئوية على المنافسين في 2012.</span>
+  </p>
+  <div class="innov-grid reveal">
+
+    <div class="innov-card" style="--c:var(--accent)">
+      <span class="itag"><span class="en-text">Activation</span><span class="ar-text">دالة التنشيط</span></span>
+      <h4>ReLU</h4>
+      <p><span class="en-text">f(x)=max(0,x). Trains several times faster than sigmoid/tanh by avoiding the vanishing gradient problem.</span><span class="ar-text">‏f(x)=max(0,x). تُدرَّب أسرع بكثير من sigmoid وtanh بتجنّب مشكلة تلاشي التدرج.</span></p>
+    </div>
+
+    <div class="innov-card" style="--c:var(--accent3)">
+      <span class="itag"><span class="en-text">Regularization</span><span class="ar-text">التنظيم</span></span>
+      <h4>Dropout</h4>
+      <p><span class="en-text">Randomly zeros 50% of FC neurons each step, forcing robust redundant representations and reducing overfitting.</span><span class="ar-text">تُعطِّل 50% من خلايا FC عشوائيًا في كل خطوة لتجبر الشبكة على تمثيلات أكثر قوةً.</span></p>
+    </div>
+
+    <div class="innov-card" style="--c:var(--accent4)">
+      <span class="itag"><span class="en-text">Hardware</span><span class="ar-text">الأجهزة</span></span>
+      <h4><span class="en-text">Dual-GPU Training</span><span class="ar-text">تدريب ثنائي GPU</span></h4>
+      <p><span class="en-text">Splits the network across 2× NVIDIA GTX 580 (3 GB each), enabling a far larger model than any single GPU.</span><span class="ar-text">تقسيم الشبكة على GTX 580 ×2 (3 غيغابايت لكل منهما) لتمكين نموذج أكبر بكثير.</span></p>
+    </div>
+
+    <div class="innov-card" style="--c:var(--accent2)">
+      <span class="itag">LRN</span>
+      <h4><span class="en-text">Local Response Normalization</span><span class="ar-text">التطبيع المحلي للاستجابة</span></h4>
+      <p><span class="en-text">Normalizes across nearby channels, simulating lateral inhibition in biological neurons. Improves generalization.</span><span class="ar-text">يُطبّع عبر القنوات المجاورة محاكيًا التثبيط الجانبي في الخلايا العصبية البيولوجية.</span></p>
+    </div>
+
+    <div class="innov-card" style="--c:#a78bfa">
+      <span class="itag"><span class="en-text">Data</span><span class="ar-text">البيانات</span></span>
+      <h4><span class="en-text">Data Augmentation</span><span class="ar-text">تضخيم البيانات</span></h4>
+      <p><span class="en-text">Random crops, horizontal flips, and PCA-based color jitter — multiplies training data to fight overfitting.</span><span class="ar-text">اقتصاص عشوائي وقلب أفقي وتشويش لوني بـ PCA — يُضاعف بيانات التدريب لمكافحة الإفراط في التخصيص.</span></p>
+    </div>
+
+    <div class="innov-card" style="--c:var(--accent3)">
+      <span class="itag"><span class="en-text">Pooling</span><span class="ar-text">التجميع</span></span>
+      <h4><span class="en-text">Overlapping Max Pooling</span><span class="ar-text">Max Pooling المتداخل</span></h4>
+      <p><span class="en-text">Pool windows overlap (stride 2, size 3×3), slightly reducing overfitting vs. non-overlapping pooling.</span><span class="ar-text">نوافذ تجميع متداخلة (خطوة 2، حجم 3×3) تُقلل الإفراط في التخصيص مقارنةً بالتجميع العادي.</span></p>
+    </div>
+
+  </div>
+</section>
+
+<!-- DELIVERABLES -->
+<section class="on-surface" id="deliverables">
+  <div class="sec-label"><span class="en-text">Project Deliverables</span><span class="ar-text">مخرجات المشروع</span></div>
+  <h2 class="sec-title reveal"><span class="en-text">What We're Building</span><span class="ar-text">ما نبنيه</span></h2>
+  <div class="deliv-grid reveal">
+
+    <div class="deliv-card" style="--dc:var(--accent)">
+      <div class="dnum">01 / 04</div>
+      <span class="dicon">📊</span>
+      <h3><span class="en-text">Presentation</span><span class="ar-text">العرض التقديمي</span></h3>
+      <p><span class="en-text">Visual PPT on AlexNet with diagrams, examples, and comparison with VGG/GoogLeNet.</span><span class="ar-text">عرض تقديمي مرئي بالمخططات والأمثلة ومقارنة مع VGG وGoogLeNet.</span></p>
+      <div class="status st-done"><div class="sdot"></div><span class="en-text">Done ✓ · 24 Slides</span><span class="ar-text">مكتمل ✓ · 24 شريحة</span></div>
+    </div>
+
+    <div class="deliv-card" style="--dc:var(--accent3)">
+      <div class="dnum">02 / 04</div>
+      <span class="dicon">🎬</span>
+      <h3><span class="en-text">Demo / Simulation</span><span class="ar-text">العرض التوضيحي</span></h3>
+      <p><span class="en-text">Interactive visualization or video showing AlexNet processing images layer by layer.</span><span class="ar-text">عرض تفاعلي أو فيديو يوضح كيف تعالج AlexNet الصور طبقةً بطبقة.</span></p>
+      <div class="status st-done"><div class="sdot"></div><span class="en-text">Done ✓ · YouTube</span><span class="ar-text">مكتمل ✓ · يوتيوب</span></div>
+    </div>
+
+    <div class="deliv-card" style="--dc:var(--accent4)">
+      <div class="dnum">03 / 04</div>
+      <span class="dicon">📝</span>
+      <h3><span class="en-text">MCQs (10–20)</span><span class="ar-text">أسئلة الاختيار المتعدد</span></h3>
+      <p><span class="en-text">Multiple-choice questions covering AlexNet's architecture, training, and results.</span><span class="ar-text">أسئلة اختيار متعدد تغطي معمارية AlexNet والتدريب والنتائج.</span></p>
+      <div class="status st-done"><div class="sdot"></div><span class="en-text">20 / 20 Done ✓</span><span class="ar-text">20 / 20 مكتمل ✓</span></div>
+    </div>
+
+    <div class="deliv-card" style="--dc:var(--accent2)">
+      <div class="dnum">04 / 04</div>
+      <span class="dicon">📄</span>
+      <h3><span class="en-text">Report</span><span class="ar-text">التقرير</span></h3>
+      <p><span class="en-text">Aim, process block diagram, challenges, AI tools used, and conclusions.</span><span class="ar-text">الهدف والمخطط الانسيابي والتحديات وأدوات الذكاء الاصطناعي والاستنتاجات.</span></p>
+      <div class="status st-done"><div class="sdot"></div><span class="en-text">Done ✓</span><span class="ar-text">مكتمل ✓</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- SLIDES -->
+<section id="slides">
+  <div class="sec-label"><span class="en-text">03 · Presentation</span><span class="ar-text">03 · العرض التقديمي</span></div>
+  <h2 class="sec-title reveal"><span class="en-text">Slide Deck</span><span class="ar-text">ملف العرض</span></h2>
+  <p class="sec-desc reveal">
+    <span class="en-text">Our full visual presentation — architecture, training, results, limitations, and comparisons.</span>
+    <span class="ar-text">عرضنا التقديمي الكامل — المعمارية والتدريب والنتائج والقيود والمقارنات.</span>
+  </p>
+  <!-- Slide preview cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-top:2rem;" class="reveal">
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.4rem;border-left:3px solid var(--accent);transition:all .25s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div style="font-family:var(--mono);font-size:.65rem;color:var(--accent);letter-spacing:.1em;margin-bottom:.5rem;">SLIDES 1–3</div>
+      <h4 style="font-family:var(--display-en);font-weight:700;margin-bottom:.4rem;"><span class="en-text">Introduction & Context</span><span class="ar-text">المقدمة والسياق التاريخي</span></h4>
+      <p style="color:var(--muted);font-size:.84rem;"><span class="en-text">What is AlexNet, who built it, and how it shifted the field from hand-crafted features (SIFT, HOG) to end-to-end deep learning.</span><span class="ar-text">ما هي AlexNet، من بناها، وكيف غيّرت المجال من الميزات اليدوية إلى التعلم العميق الشامل.</span></p>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.4rem;border-left:3px solid var(--accent3);transition:all .25s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div style="font-family:var(--mono);font-size:.65rem;color:var(--accent3);letter-spacing:.1em;margin-bottom:.5rem;">SLIDES 4–6</div>
+      <h4 style="font-family:var(--display-en);font-weight:700;margin-bottom:.4rem;"><span class="en-text">Architecture & ReLU</span><span class="ar-text">المعمارية ودالة ReLU</span></h4>
+      <p style="color:var(--muted);font-size:.84rem;"><span class="en-text">The 8-layer structure (5 Conv + 3 FC), and how ReLU reached 25% error 6× faster than Tanh, solving the vanishing gradient problem.</span><span class="ar-text">البنية ذات 8 طبقات، وكيف حقّقت ReLU نسبة خطأ 25% بسرعة 6 أضعاف مقارنةً بـ Tanh.</span></p>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.4rem;border-left:3px solid var(--accent4);transition:all .25s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div style="font-family:var(--mono);font-size:.65rem;color:var(--accent4);letter-spacing:.1em;margin-bottom:.5rem;">SLIDES 7–10</div>
+      <h4 style="font-family:var(--display-en);font-weight:700;margin-bottom:.4rem;"><span class="en-text">Dual-GPU & Dropout</span><span class="ar-text">ثنائي GPU وتقنية Dropout</span></h4>
+      <p style="color:var(--muted);font-size:.84rem;"><span class="en-text">Splitting the model across two GTX 580s (3GB each), and using Dropout (p=0.5) in FC layers to fight overfitting.</span><span class="ar-text">تقسيم النموذج على GTX 580 (3 غيغابايت لكل) واستخدام Dropout (p=0.5) في طبقات FC لمنع الإفراط في التخصيص.</span></p>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.4rem;border-left:3px solid #a78bfa;transition:all .25s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div style="font-family:var(--mono);font-size:.65rem;color:#a78bfa;letter-spacing:.1em;margin-bottom:.5rem;">SLIDES 11–14</div>
+      <h4 style="font-family:var(--display-en);font-weight:700;margin-bottom:.4rem;"><span class="en-text">Data Augmentation & LRN</span><span class="ar-text">تضخيم البيانات والـ LRN</span></h4>
+      <p style="color:var(--muted);font-size:.84rem;"><span class="en-text">Random crops, flips, PCA color jitter, and Local Response Normalization simulating lateral inhibition in biological neurons.</span><span class="ar-text">اقتصاص عشوائي وقلب وتشويش لوني بـ PCA والتطبيع المحلي المحاكي للتثبيط الجانبي في الدماغ.</span></p>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.4rem;border-left:3px solid var(--accent2);transition:all .25s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div style="font-family:var(--mono);font-size:.65rem;color:var(--accent2);letter-spacing:.1em;margin-bottom:.5rem;">SLIDES 15–18</div>
+      <h4 style="font-family:var(--display-en);font-weight:700;margin-bottom:.4rem;"><span class="en-text">Results & Comparison</span><span class="ar-text">النتائج والمقارنة</span></h4>
+      <p style="color:var(--muted);font-size:.84rem;"><span class="en-text">Won ILSVRC 2012 by 10.8% margin. Layer visualizations, filter analysis, and comparison vs LeNet on scale, nonlinearity, and hardware.</span><span class="ar-text">فازت بـ ILSVRC 2012 بفارق 10.8%. تحليل الفلاتر ومقارنة AlexNet بـ LeNet في الحجم ودالة التنشيط والأجهزة.</span></p>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.4rem;border-left:3px solid var(--accent3);transition:all .25s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div style="font-family:var(--mono);font-size:.65rem;color:var(--accent3);letter-spacing:.1em;margin-bottom:.5rem;">SLIDES 19–22</div>
+      <h4 style="font-family:var(--display-en);font-weight:700;margin-bottom:.4rem;"><span class="en-text">Limitations & Legacy</span><span class="ar-text">القيود والإرث</span></h4>
+      <p style="color:var(--muted);font-size:.84rem;"><span class="en-text">Heavy compute cost, 11×11 kernels replaced by stacked 3×3 in VGGNet, dataset bias — and AlexNet's legacy sparking self-driving cars, medical AI, and LLMs.</span><span class="ar-text">تكلفة حسابية عالية، نوى 11×11 استُبدلت بـ 3×3 في VGGNet، وإرث AlexNet الذي أشعل ثورة السيارات ذاتية القيادة والذكاء الاصطناعي الطبي.</span></p>
+    </div>
+
+  </div>
+
+  <div style="margin-top:2rem;padding:1.2rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;" class="reveal">
+    <div>
+      <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:.3rem;"><span class="en-text">FULL DECK · 24 SLIDES</span><span class="ar-text">العرض الكامل · 24 شريحة</span></div>
+      <div style="font-family:var(--display-en);font-weight:700;"><span class="en-text">AlexNet: The Deep Learning Revolution</span><span class="ar-text">AlexNet: ثورة التعلم العميق</span></div>
+    </div>
+    <a href="#" class="btn btn-ghost">
+      <span class="en-text">Download PPTX ↓</span>
+      <span class="ar-text">↓ تحميل PPTX</span>
+    </a>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="on-surface" id="demo">
+  <div class="sec-label"><span class="en-text">04 · Demo</span><span class="ar-text">04 · العرض التجريبي</span></div>
+  <h2 class="sec-title reveal"><span class="en-text">Interactive Demo</span><span class="ar-text">العرض التفاعلي</span></h2>
+  <p class="sec-desc reveal">
+    <span class="en-text">See AlexNet classify images and explore activations across every layer.</span>
+    <span class="ar-text">شاهد AlexNet تُصنِّف الصور واستكشف التنشيطات عبر كل طبقة.</span>
+  </p>
+  <div style="margin-top:2rem;border-radius:12px;overflow:hidden;aspect-ratio:16/9;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5);" class="reveal">
+    <iframe width="100%" height="100%"
+      src="https://www.youtube.com/embed/qFNxr7_YwkI?si=AB54o_gWNcBmZK-k"
+      title="YouTube video player"
+      frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allowfullscreen>
+    </iframe>
+  </div>
+  <div style="margin-top:1rem;" class="reveal">
+    <a href="https://youtu.be/qFNxr7_YwkI" target="_blank" class="btn btn-ghost" style="font-size:.75rem;">
+      <span class="en-text">▶ Watch on YouTube</span>
+      <span class="ar-text">▶ شاهد على يوتيوب</span>
+    </a>
+  </div>
+</section>
+
+<!-- MCQ -->
+<section id="mcq">
+  <div class="sec-label"><span class="en-text">05 · Quiz</span><span class="ar-text">05 · الأسئلة</span></div>
+  <h2 class="sec-title reveal"><span class="en-text">Test Your Knowledge</span><span class="ar-text">اختبر معلوماتك</span></h2>
+  <p class="sec-desc reveal">
+    <span class="en-text">Click a question to expand it, then click an answer to check it.</span>
+    <span class="ar-text">اضغط على السؤال لفتحه، ثم اضغط على الإجابة للتحقق منها.</span>
+  </p>
+
+  <!-- Score tracker -->
+  <div id="score-bar" style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;padding:1rem 1.4rem;background:var(--card);border:1px solid var(--border);border-radius:10px;">
+    <span style="font-family:var(--mono);font-size:.75rem;color:var(--muted);">
+      <span class="en-text">SCORE</span><span class="ar-text">النتيجة</span>
+    </span>
+    <span id="score-display" style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--accent);">0 / 20</span>
+    <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+      <div id="score-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width .4s ease;border-radius:2px;"></div>
+    </div>
+    <span id="score-pct" style="font-family:var(--mono);font-size:.75rem;color:var(--muted);">0%</span>
+  </div>
+
+  <div class="mcq-wrap reveal">
+
+    <!-- Q01 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q01</span>
+        <span class="mcq-q"><span class="en-text">In what year did AlexNet win the ImageNet Large Scale Visual Recognition Challenge (ILSVRC)?</span><span class="ar-text">في أي عام فازت AlexNet بمسابقة ILSVRC؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">2010</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">B</span><span class="opt-text">2011</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">C</span><span class="opt-text">2012</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">2014</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet won ILSVRC in 2012, achieving a top-5 error rate of 15.3% — nearly half the error of the second-place competitor.</span><span class="ar-text">✓ فازت AlexNet بـ ILSVRC عام 2012 بنسبة خطأ top-5 بلغت 15.3% — أي ما يقارب نصف خطأ المنافس الثاني.</span></div>
+      </div>
+    </div>
+
+    <!-- Q02 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q02</span>
+        <span class="mcq-q"><span class="en-text">Who are the primary authors of the AlexNet paper?</span><span class="ar-text">من هم المؤلفون الرئيسيون لورقة AlexNet البحثية؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">LeCun, Bengio, and Hinton</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">Krizhevsky, Sutskever, and Hinton</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">Goodfellow, Courville, and Bengio</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">He, Zhang, and Ren</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet was created by Alex Krizhevsky, Ilya Sutskever, and Geoffrey Hinton at the University of Toronto.</span><span class="ar-text">✓ أنشأ AlexNet كلٌّ من أليكس كريزيفسكي وإيليا سوتسكيفر وجيفري هينتون في جامعة تورنتو.</span></div>
+      </div>
+    </div>
+
+    <!-- Q03 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q03</span>
+        <span class="mcq-q"><span class="en-text">How many convolutional layers does AlexNet have?</span><span class="ar-text">كم عدد الطبقات التلافيفية في AlexNet؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">3</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">5</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">7</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">8</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet has 5 convolutional layers followed by 3 fully connected layers, totaling 8 learnable layers.</span><span class="ar-text">✓ تمتلك AlexNet 5 طبقات تلافيفية تتبعها 3 طبقات متصلة بالكامل، بإجمالي 8 طبقات قابلة للتعلم.</span></div>
+      </div>
+    </div>
+
+    <!-- Q04 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q04</span>
+        <span class="mcq-q"><span class="en-text">What activation function did AlexNet use instead of sigmoid or tanh?</span><span class="ar-text">ما دالة التنشيط التي استخدمتها AlexNet بدلًا من sigmoid أو tanh؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">Leaky ReLU</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">B</span><span class="opt-text">ELU</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">C</span><span class="opt-text">ReLU</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">Softmax</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet popularized ReLU (Rectified Linear Unit), which trains several times faster than tanh because it does not suffer from the vanishing gradient problem.</span><span class="ar-text">✓ نشرت AlexNet استخدام ReLU الذي يُدرَّب أسرع بكثير من tanh لأنه لا يعاني من مشكلة تلاشي التدرج.</span></div>
+      </div>
+    </div>
+
+    <!-- Q05 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q05</span>
+        <span class="mcq-q"><span class="en-text">What technique did AlexNet use to reduce overfitting during training?</span><span class="ar-text">ما التقنية التي استخدمتها AlexNet لتقليل الإفراط في التخصيص أثناء التدريب؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">Batch normalization</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">B</span><span class="opt-text">L1 regularization</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">Weight decay only</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">D</span><span class="opt-text">Dropout</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet applied Dropout with probability 0.5 in the first two fully connected layers to prevent overfitting by randomly deactivating neurons during training.</span><span class="ar-text">✓ طبّقت AlexNet تقنية Dropout باحتمالية 0.5 في أول طبقتَين FC لمنع الإفراط في التخصيص بتعطيل خلايا عشوائية أثناء التدريب.</span></div>
+      </div>
+    </div>
+
+    <!-- Q06 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q06</span>
+        <span class="mcq-q"><span class="en-text">Why did the original AlexNet use two GPUs during training?</span><span class="ar-text">لماذا استخدمت AlexNet الأصلية معالجَين GPU أثناء التدريب؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">To increase dataset size</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">Because GPUs at the time had limited memory (3GB each)</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">To run different architectures in parallel</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">To apply data augmentation faster</span></div>
+        <div class="explain"><span class="en-text">✓ The GTX 580 GPUs used in 2012 had only 3GB of memory, so the model was split across two GPUs to fit the large network.</span><span class="ar-text">✓ كانت معالجات GTX 580 المستخدمة عام 2012 تمتلك 3 غيغابايت فقط من الذاكرة، لذا قُسِّم النموذج على معالجَين لاستيعاب الشبكة الكبيرة.</span></div>
+      </div>
+    </div>
+
+    <!-- Q07 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q07</span>
+        <span class="mcq-q"><span class="en-text">What is the size of the input image that AlexNet accepts?</span><span class="ar-text">ما حجم صورة المدخل التي تقبلها AlexNet؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">32×32</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">B</span><span class="opt-text">64×64</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">C</span><span class="opt-text">224×224</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">256×256</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet accepts 224×224 pixel RGB images as input (sometimes cited as 227×227 in practice due to implementation details).</span><span class="ar-text">✓ تقبل AlexNet صور RGB بحجم 224×224 بكسل (وقد تُذكر أحيانًا بـ 227×227 نظرًا لتفاصيل التنفيذ).</span></div>
+      </div>
+    </div>
+
+    <!-- Q08 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q08</span>
+        <span class="mcq-q"><span class="en-text">What dataset was used to train AlexNet?</span><span class="ar-text">ما مجموعة البيانات التي استُخدمت لتدريب AlexNet؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">CIFAR-10</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">B</span><span class="opt-text">MNIST</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">C</span><span class="opt-text">ImageNet</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">COCO</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet was trained on ImageNet, which contains over 1.2 million labeled images across 1,000 classes.</span><span class="ar-text">✓ دُرِّبت AlexNet على مجموعة بيانات ImageNet التي تحتوي على أكثر من 1.2 مليون صورة مصنّفة في 1000 فئة.</span></div>
+      </div>
+    </div>
+
+    <!-- Q09 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q09</span>
+        <span class="mcq-q"><span class="en-text">What does 'data augmentation' mean in the context of AlexNet's training?</span><span class="ar-text">ماذا يعني "تضخيم البيانات" في سياق تدريب AlexNet؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">Adding more layers to the network</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">Artificially increasing training data via transformations like flipping and cropping</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">Increasing the learning rate over time</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">Removing low-quality images from the dataset</span></div>
+        <div class="explain"><span class="en-text">✓ Data augmentation means creating new training examples by applying transformations (flipping, cropping, color jitter) to help the model generalize better.</span><span class="ar-text">✓ يعني تضخيم البيانات إنشاء أمثلة تدريب جديدة بتطبيق تحويلات (قلب، اقتصاص، تشويش لوني) لمساعدة النموذج على التعميم بشكل أفضل.</span></div>
+      </div>
+    </div>
+
+    <!-- Q10 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q10</span>
+        <span class="mcq-q"><span class="en-text">What is Local Response Normalization (LRN), used in AlexNet?</span><span class="ar-text">ما هو التطبيع المحلي للاستجابة (LRN) المستخدم في AlexNet؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">A type of pooling layer</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">A normalization across nearby channels to encourage competition</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">A way to normalize the learning rate</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">A method to normalize input pixel values</span></div>
+        <div class="explain"><span class="en-text">✓ LRN normalizes the activity of neurons across neighboring feature maps, inspired by lateral inhibition in the brain.</span><span class="ar-text">✓ يُطبّع LRN نشاط الخلايا العصبية عبر خرائط الميزات المجاورة، مستوحىً من التثبيط الجانبي في الدماغ.</span></div>
+      </div>
+    </div>
+
+    <!-- Q11 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q11</span>
+        <span class="mcq-q"><span class="en-text">What type of pooling did AlexNet use?</span><span class="ar-text">ما نوع التجميع الذي استخدمته AlexNet؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">Average pooling</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">B</span><span class="opt-text">Global average pooling</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">C</span><span class="opt-text">Max pooling</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">Strided pooling only</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet used max pooling, which takes the maximum value in each pooling window, helping retain the most prominent features.</span><span class="ar-text">✓ استخدمت AlexNet Max Pooling الذي يأخذ القيمة العظمى في كل نافذة تجميع، مما يساعد على الاحتفاظ بأبرز الميزات.</span></div>
+      </div>
+    </div>
+
+    <!-- Q12 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q12</span>
+        <span class="mcq-q"><span class="en-text">How many output classes does AlexNet's final layer classify?</span><span class="ar-text">كم عدد الفئات التي تُصنِّفها الطبقة الأخيرة في AlexNet؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">100</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">B</span><span class="opt-text">500</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">C</span><span class="opt-text">1,000</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">10,000</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet's final softmax layer outputs probabilities for 1,000 classes, matching the ImageNet challenge categories.</span><span class="ar-text">✓ تُخرج طبقة Softmax الأخيرة في AlexNet احتمالات لـ 1000 فئة تتوافق مع فئات مسابقة ImageNet.</span></div>
+      </div>
+    </div>
+
+    <!-- Q13 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q13</span>
+        <span class="mcq-q"><span class="en-text">What is the role of the fully connected layers at the end of AlexNet?</span><span class="ar-text">ما دور الطبقات المتصلة بالكامل في نهاية AlexNet؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">To detect edges and textures</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">B</span><span class="opt-text">To apply pooling operations</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">C</span><span class="opt-text">To combine learned features and produce final class scores</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">To perform data augmentation</span></div>
+        <div class="explain"><span class="en-text">✓ The fully connected layers take the high-level feature maps from the convolutional layers and combine them to produce the final classification scores.</span><span class="ar-text">✓ تأخذ الطبقات المتصلة بالكامل خرائط الميزات عالية المستوى من الطبقات التلافيفية وتدمجها لإنتاج نقاط التصنيف النهائية.</span></div>
+      </div>
+    </div>
+
+    <!-- Q14 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q14</span>
+        <span class="mcq-q"><span class="en-text">What problem does ReLU solve compared to sigmoid/tanh activation functions?</span><span class="ar-text">ما المشكلة التي تحلّها ReLU مقارنةً بدوال التنشيط sigmoid وtanh؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">Overfitting</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">The vanishing gradient problem</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">Underfitting</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">High computational cost of pooling</span></div>
+        <div class="explain"><span class="en-text">✓ Sigmoid and tanh saturate at extreme values, causing gradients to vanish during backpropagation. ReLU avoids this, allowing faster and more stable training.</span><span class="ar-text">✓ تتشبّع sigmoid وtanh عند القيم المتطرفة مما يُسبب تلاشي التدرج. ReLU تتجنب ذلك مما يُتيح تدريبًا أسرع وأكثر استقرارًا.</span></div>
+      </div>
+    </div>
+
+    <!-- Q15 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q15</span>
+        <span class="mcq-q"><span class="en-text">Which of the following best describes what a convolutional layer does?</span><span class="ar-text">أيٌّ مما يلي يصف بشكل أفضل وظيفة الطبقة التلافيفية؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">It reduces the image to a single number</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">It applies learned filters to detect patterns like edges and textures</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">It randomly drops neurons to reduce overfitting</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">It maps features to class labels</span></div>
+        <div class="explain"><span class="en-text">✓ A convolutional layer slides learned filters across the input to detect local patterns such as edges, corners, and textures.</span><span class="ar-text">✓ تُمرِّر الطبقة التلافيفية فلاتر مُتعلَّمة عبر المدخلات للكشف عن الأنماط المحلية كالحواف والزوايا والأنسجة.</span></div>
+      </div>
+    </div>
+
+    <!-- Q16 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q16</span>
+        <span class="mcq-q"><span class="en-text">What is the top-5 error rate AlexNet achieved on the ILSVRC 2012 test set?</span><span class="ar-text">ما نسبة خطأ top-5 التي حققتها AlexNet على مجموعة اختبار ILSVRC 2012؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">26.2%</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">16.4%</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">10.1%</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">5.0%</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet achieved a top-5 error rate of 16.4%, dramatically outperforming the second-best entry which had a 25.8% error rate.</span><span class="ar-text">✓ حققت AlexNet نسبة خطأ top-5 بلغت 16.4%، متفوقةً بشكل كبير على المنافس الثاني الذي كانت نسبة خطئه 25.8%.</span></div>
+      </div>
+    </div>
+
+    <!-- Q17 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q17</span>
+        <span class="mcq-q"><span class="en-text">Before AlexNet, what type of features were typically used for image classification?</span><span class="ar-text">قبل AlexNet، ما نوع الميزات التي كانت تُستخدم عادةً لتصنيف الصور؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">Deep neural network features</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">Hand-crafted features like SIFT and HOG</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">Transformer-based embeddings</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">Random forest features</span></div>
+        <div class="explain"><span class="en-text">✓ Before the deep learning era, image classification relied on hand-crafted features like SIFT (Scale-Invariant Feature Transform) and HOG (Histogram of Oriented Gradients).</span><span class="ar-text">✓ قبل عصر التعلم العميق، كان تصنيف الصور يعتمد على ميزات مصنوعة يدويًا مثل SIFT وHOG.</span></div>
+      </div>
+    </div>
+
+    <!-- Q18 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q18</span>
+        <span class="mcq-q"><span class="en-text">In which layer does AlexNet first use dropout regularization?</span><span class="ar-text">في أي طبقة تستخدم AlexNet تقنية Dropout للمرة الأولى؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">The first convolutional layer</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">The first fully connected layer</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">The last convolutional layer</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">The pooling layer</span></div>
+        <div class="explain"><span class="en-text">✓ Dropout is applied in the first two fully connected layers of AlexNet (layers 6 and 7), not in the convolutional layers.</span><span class="ar-text">✓ تُطبَّق تقنية Dropout في أول طبقتَين متصلتَين بالكامل (الطبقتان 6 و7)، وليس في الطبقات التلافيفية.</span></div>
+      </div>
+    </div>
+
+    <!-- Q19 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q19</span>
+        <span class="mcq-q"><span class="en-text">What is the key contribution that made AlexNet a turning point in computer vision?</span><span class="ar-text">ما الإسهام الرئيسي الذي جعل AlexNet نقطة تحوّل في رؤية الحاسوب؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">It was the first neural network ever built</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">B</span><span class="opt-text">It showed that deep CNNs trained on GPUs can dramatically outperform traditional methods on large-scale image recognition</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">C</span><span class="opt-text">It introduced the attention mechanism</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">It introduced recurrent connections for image processing</span></div>
+        <div class="explain"><span class="en-text">✓ AlexNet demonstrated that deep CNNs combined with large datasets and GPU training could surpass hand-crafted feature methods by a huge margin, sparking the modern deep learning revolution.</span><span class="ar-text">✓ أثبتت AlexNet أن الشبكات التلافيفية العميقة مع مجموعات البيانات الكبيرة والتدريب بـ GPU تتفوق بفارق كبير على الأساليب التقليدية، مما أشعل ثورة التعلم العميق الحديثة.</span></div>
+      </div>
+    </div>
+
+    <!-- Q20 -->
+    <div class="mcq-card" onclick="toggleQ(this)">
+      <div class="mcq-head">
+        <span class="mcq-num">Q20</span>
+        <span class="mcq-q"><span class="en-text">Which architecture came directly after AlexNet and improved upon it by using smaller filters throughout?</span><span class="ar-text">ما المعمارية التي جاءت مباشرةً بعد AlexNet وحسّنتها باستخدام فلاتر أصغر في كل مكان؟</span></span>
+        <span class="mcq-chev">▼</span>
+      </div>
+      <div class="mcq-body">
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">A</span><span class="opt-text">ResNet</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">B</span><span class="opt-text">LeNet</span></div>
+        <div class="opt" onclick="ans(event,this,true)"><span class="opt-l">C</span><span class="opt-text">VGGNet</span></div>
+        <div class="opt" onclick="ans(event,this,false)"><span class="opt-l">D</span><span class="opt-text">GoogleNet</span></div>
+        <div class="explain"><span class="en-text">✓ VGGNet (by Simonyan and Zisserman) followed AlexNet and used very deep networks with small 3×3 convolutional filters throughout, achieving better performance.</span><span class="ar-text">✓ جاءت VGGNet (بواسطة سيمونيان وزيسرمان) بعد AlexNet واستخدمت شبكات أعمق مع فلاتر 3×3 صغيرة في كل مكان، محققةً أداءً أفضل.</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- REPORT -->
+<section class="on-surface" id="report">
+  <div class="sec-label"><span class="en-text">06 · Report</span><span class="ar-text">06 · التقرير</span></div>
+  <h2 class="sec-title reveal"><span class="en-text">Project Report</span><span class="ar-text">تقرير المشروع</span></h2>
+  <p class="sec-desc reveal">
+    <span class="en-text">Our process from objective to conclusion — challenges, AI tools used, and findings.</span>
+    <span class="ar-text">مسيرتنا من الهدف إلى الاستنتاجات — التحديات وأدوات الذكاء الاصطناعي والنتائج.</span>
+  </p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.2rem;margin-top:2.5rem;" class="reveal">
+
+    <div class="step-card">
+      <div class="step-n">01</div>
+      <h4><span class="en-text">Aim of the Work</span><span class="ar-text">هدف العمل</span></h4>
+      <p><span class="en-text">Demonstrate a clear, deep understanding of AlexNet — not just describe it, but communicate why it mattered: what problems it solved, what innovations it introduced, and what legacy it left.</span><span class="ar-text">إثبات فهم واضح وعميق لـ AlexNet — ليس مجرد وصف، بل توصيل سبب أهميتها: المشكلات التي حلّتها، الابتكارات التي قدّمتها، والإرث الذي تركته.</span></p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-n">02</div>
+      <h4><span class="en-text">Methodology</span><span class="ar-text">المنهجية</span></h4>
+      <p><span class="en-text">5-phase workflow: Research → Content Design → Presentation Development → Video Production → MCQ & Report. Each phase validated against the original Krizhevsky et al. 2012 paper.</span><span class="ar-text">منهجية من 5 مراحل: بحث ← تصميم محتوى ← تطوير العرض ← إنتاج الفيديو ← الأسئلة والتقرير. كل مرحلة تم التحقق منها بالورقة البحثية الأصلية.</span></p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-n">03</div>
+      <h4><span class="en-text">AI Tools Used</span><span class="ar-text">أدوات الذكاء الاصطناعي</span></h4>
+      <p><span class="en-text">NotebookLM for the explainer video; Claude for MCQs and this report. Every output was reviewed line-by-line against the original paper — a 15-fact checklist was used to catch inaccuracies systematically.</span><span class="ar-text">NotebookLM للفيديو التوضيحي؛ Claude للأسئلة والتقرير. راجع الفريق كل مخرج سطرًا بسطر مقابل الورقة الأصلية باستخدام قائمة تحقق من 15 حقيقة.</span></p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-n">04</div>
+      <h4><span class="en-text">Challenges</span><span class="ar-text">التحديات</span></h4>
+      <p><span class="en-text">Balancing depth with accessibility; validating AI content; prompt engineering for the video (initial prompts gave Wikipedia-style output — refined prompts requested the 'why', analogies, and narrative arc); deciding what to exclude for a beginner audience.</span><span class="ar-text">الموازنة بين العمق وسهولة الفهم؛ التحقق من محتوى الذكاء الاصطناعي؛ هندسة المطالبات للفيديو؛ تحديد ما يُستبعد للجمهور المبتدئ.</span></p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-n">05</div>
+      <h4><span class="en-text">Limitations</span><span class="ar-text">القيود</span></h4>
+      <p><span class="en-text">High computational cost, large 11×11 kernels replaced by stacked 3×3 in VGGNet, Western-centric dataset bias in ImageNet, and eventual replacement by more efficient architectures like ResNet.</span><span class="ar-text">تكلفة حسابية عالية، نوى 11×11 الكبيرة استُبدلت بـ 3×3 في VGGNet، تحيّز مجموعة بيانات ImageNet، وإحلال معماريات أكثر كفاءة كـ ResNet.</span></p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-n">06</div>
+      <h4><span class="en-text">Conclusions</span><span class="ar-text">الاستنتاجات</span></h4>
+      <p><span class="en-text">AlexNet's impact came from combining ReLU, Dropout, Data Augmentation, Overlapping Pooling, LRN, and GPU training together at unprecedented scale. It was the spark that ignited the modern deep learning era.</span><span class="ar-text">جاء أثر AlexNet من دمج ReLU وDropout وتضخيم البيانات والتجميع المتداخل وLRN والتدريب بـ GPU معًا بحجم غير مسبوق. كانت الشرارة التي أشعلت عصر التعلم العميق الحديث.</span></p>
+    </div>
+
+  </div>
+
+  <!-- Key quote -->
+  <div style="margin-top:2rem;padding:1.8rem 2rem;background:var(--card);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--accent3);position:relative;" class="reveal">
+    <div style="font-family:var(--mono);font-size:.65rem;color:var(--accent3);letter-spacing:.1em;margin-bottom:.6rem;">
+      <span class="en-text">CONCLUSION</span><span class="ar-text">الخلاصة</span>
+    </div>
+    <p style="font-size:1rem;line-height:1.7;color:var(--text);">
+      <span class="en-text">"AlexNet was the spark that ignited the modern deep learning era. Understanding it deeply is not just an academic exercise — it is the foundation for understanding every major CNN architecture that followed."</span>
+      <span class="ar-text">"كانت AlexNet الشرارة التي أشعلت عصر التعلم العميق الحديث. إن فهمها بعمق ليس مجرد تمرين أكاديمي — بل هو الأساس لفهم كل معمارية CNN رئيسية جاءت بعدها."</span>
+    </p>
+    <div style="margin-top:.8rem;font-family:var(--mono);font-size:.72rem;color:var(--muted);">— <span class="en-text">AlexNet Project Report, Cairo University 2026</span><span class="ar-text">تقرير مشروع AlexNet، جامعة القاهرة 2025</span></div>
+  </div>
+
+  <div style="margin-top:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;" class="reveal">
+    <a href="#" class="btn btn-ghost">
+      <span class="en-text">Download Full Report ↓</span>
+      <span class="ar-text">↓ تحميل التقرير كاملًا</span>
+    </a>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="sec-label"><span class="en-text">07 · The Team</span><span class="ar-text">07 · الفريق</span></div>
+  <h2 class="sec-title reveal"><span class="en-text">Our Group</span><span class="ar-text">مجموعتنا</span></h2>
+  <p class="sec-desc reveal">
+    <span class="en-text">Cairo University · Faculty of Engineering · Electronics & Electrical Communication Dept.<br>Supervised by: Dr. Mohsen Rashwan</span>
+    <span class="ar-text">جامعة القاهرة · كلية الهندسة · قسم الإلكترونيات والاتصالات الكهربائية<br>إشراف: د. محسن رشوان</span>
+  </p>
+  <div class="team-grid reveal">
+    <div class="team-card">
+      <div class="avatar">ز</div>
+      <h4><span class="en-text">Zeyad Ashraf</span><span class="ar-text">زياد أشرف</span></h4>
+      <p><span class="en-text">Website & Integration</span><span class="ar-text">الموقع والتكامل</span></p>
+    </div>
+    <div class="team-card">
+      <div class="avatar" style="background:linear-gradient(135deg,var(--accent2),var(--accent4))">م</div>
+      <h4><span class="en-text">Mohamed Abdelsalam</span><span class="ar-text">محمد عبد السلام</span></h4>
+      <p><span class="en-text">Presentation & Research</span><span class="ar-text">العرض والبحث</span></p>
+    </div>
+    <div class="team-card">
+      <div class="avatar" style="background:linear-gradient(135deg,var(--accent3),var(--accent))">م</div>
+      <h4><span class="en-text">Mohamed Ezzat Ahmed</span><span class="ar-text">محمد عزت أحمد</span></h4>
+      <p><span class="en-text">Video & MCQ Design</span><span class="ar-text">الفيديو وتصميم الأسئلة</span></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-logo">AlexNet // ANN Project</div>
+  <div class="foot-copy">
+    <span class="en-text">© 2026 · Cairo University · Zeyad A., Mohamed A., Mohamed E. · Dr. Mohsen Rashwan</span>
+    <span class="ar-text">© 2026 · جامعة القاهرة · زياد، محمد، محمد · د. محسن رشوان</span>
+  </div>
+</footer>
+
+<script>
+// Progress
+window.addEventListener('scroll', () => {
+  const s = document.documentElement;
+  document.getElementById('prog').style.width = (s.scrollTop / (s.scrollHeight - s.clientHeight) * 100) + '%';
+});
+
+// Scroll reveal
+const obs = new IntersectionObserver(
+  es => es.forEach(e => e.isIntersecting && e.target.classList.add('vis')),
+  { threshold: 0.1 }
+);
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// Language toggle
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', (lang === 'ar' ? b.textContent.includes('ع') : b.textContent.includes('EN')));
+  });
+}
+
+// MCQ
+function toggleQ(card) {
+  const open = card.classList.contains('open');
+  document.querySelectorAll('.mcq-card').forEach(c => c.classList.remove('open'));
+  if (!open) card.classList.add('open');
+}
+
+function ans(e, el, correct) {
+  e.stopPropagation();
+  const body = el.closest('.mcq-body');
+  const alreadyCorrect = body.querySelector('.opt.correct');
+  body.querySelectorAll('.opt').forEach(o => o.classList.remove('correct','wrong'));
+  el.classList.add(correct ? 'correct' : 'wrong');
+  body.querySelector('.explain').style.display = correct ? 'block' : 'none';
+  if (correct && !alreadyCorrect) updateScore();
+}
+
+function updateScore() {
+  const correct = document.querySelectorAll('.opt.correct').length;
+  const pct = Math.round(correct / 20 * 100);
+  document.getElementById('score-display').textContent = correct + ' / 20';
+  document.getElementById('score-fill').style.width = pct + '%';
+  document.getElementById('score-pct').textContent = pct + '%';
+  const col = pct >= 70 ? 'var(--accent3)' : pct >= 40 ? 'var(--accent4)' : 'var(--accent2)';
+  document.getElementById('score-display').style.color = col;
+  document.getElementById('score-fill').style.background = col;
+}
+</script>
+</body>
+</html>
